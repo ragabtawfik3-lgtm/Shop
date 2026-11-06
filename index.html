@@ -36,7 +36,7 @@ addr:['العنوان بالتفصيل','Full address'],ref:['آخر 4 أرقا�
 confirm:['أكّدت التحويل، أرسل الطلب','I sent the money, place order'],ok:['تم استلام طلبك','Order received'],
 okp:['هنراجع التحويل ونكلمك على الموبايل لتأكيد التوصيل.','We will check the transfer and call you to confirm delivery.'],
 new:['طلب جديد','New order'],egp:['ج.م','EGP'],order:['رقم الطلب','Order'],
-note:['','Prototype: the wallet number and InstaPay address are examples. Replace them with yours.']};
+};
 const WALLET='01111831604',INSTA='01111831604';
 let lang='ar',view='home',cat='all',q='',cart={},method='wallet',code='';
 try{lang=localStorage.getItem('lang')||'ar'}catch(e){}
@@ -71,7 +71,7 @@ return head()+`<button class="back" onclick="go('cart')">${t('back')}</button><h
 <label for="f2">${t('phone')}</label><input class="in" id="f2" inputmode="tel" oninput="chk()" autocomplete="tel">
 <label for="f3">${t('addr')}</label><input class="in" id="f3" oninput="chk()" autocomplete="street-address">
 <label for="f4">${t('ref')}</label><input class="in" id="f4" inputmode="numeric" maxlength="4" autocomplete="off" oninput="this.value=this.value.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^0-9]/g,'');chk()">
-<br><button class="btn" id="go" disabled onclick="place()">${t('confirm')}</button><p class="note">${t('note')}</p>`}
+<br><button class="btn" id="go" disabled onclick="place()">${t('confirm')}</button>`}
 function chk(){$('#go').disabled=!(['#f1','#f2','#f3'].every(s=>$(s).value.trim().length>1)&&/^[0-9]{4}$/.test($('#f4').value))}
 function place(){code='SS-'+Math.floor(1000+Math.random()*9000);
 const o={code,method,total:sum(),name:$('#f1').value.trim(),phone:$('#f2').value.trim(),addr:$('#f3').value.trim(),ref:$('#f4').value.trim(),
