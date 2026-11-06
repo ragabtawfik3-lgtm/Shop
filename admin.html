@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم - شوب جنوب سينا</title>
+    <!-- Tailwind CSS -->
     <script src="https://tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cloudflare.com">
+    <!-- Firebase SDKs -->
     <script src="https://gstatic.com"></script>
     <script src="https://gstatic.com"></script>
     <script src="https://gstatic.com"></script>
 </head>
 <body class="bg-[#ece6dc] text-gray-800 font-sans min-h-screen flex flex-col p-4">
 
+    <!-- Header -->
     <header class="max-w-4xl w-full mx-auto flex justify-between items-center mb-6">
         <button onclick="window.location.href='index.html'" class="border border-[#113946] text-[#113946] px-4 py-1.5 rounded-full font-bold hover:bg-[#113946] hover:text-white transition">خروج</button>
         <div class="text-center">
@@ -20,12 +24,15 @@
         </div>
     </header>
 
+    <!-- Navigation Tabs -->
     <div class="max-w-4xl w-full mx-auto flex justify-center gap-4 mb-6">
         <button class="bg-[#113946] text-white px-6 py-2 rounded-full font-bold shadow">الطلبات</button>
         <button onclick="alert('قسم المنتجات يعمل من خلال السورس الافتراضي لديك')" class="bg-white text-gray-700 border border-gray-300 px-6 py-2 rounded-full font-bold hover:bg-gray-50">المنتجات</button>
     </div>
 
+    <!-- Main Container -->
     <main class="max-w-4xl w-full mx-auto flex-1 space-y-6">
+        <!-- Search & Filter Bar -->
         <div class="bg-white p-4 rounded-2xl shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
             <div class="relative w-full md:flex-1">
                 <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
@@ -41,6 +48,7 @@
             </select>
         </div>
 
+        <!-- Orders Container -->
         <div id="ordersContainer" class="space-y-4">
             <div id="loadingMessage" class="text-center py-12 text-gray-500 font-bold flex flex-col items-center justify-center gap-3">
                 <i class="fas fa-spinner fa-spin text-2xl text-[#113946]"></i>
@@ -60,9 +68,11 @@
             try {
                 const response = await fetch('index.html?v=' + new Date().getTime());
                 const htmlText = await response.text();
+                
+                // خوارزمية محسنة لاستخراج التكوين بدقة شديدة
                 const match = htmlText.match(/firebaseConfig\s*=\s*{([\s\S]*?)}/);
                 
-                if (match && match[1]) {
+                if (match) {
                     const configObj = {};
                     const lines = match[1].split('\n');
                     lines.forEach(line => {
@@ -80,10 +90,10 @@
                     db = firebase.firestore();
                     startListeningToOrders();
                 } else {
-                    document.getElementById('loadingMessage').innerHTML = '<span class="text-red-500">برجاء تجربة رابط الموقع أونلاين على الإنترنت.</span>';
+                    document.getElementById('loadingMessage').innerHTML = '<span class="text-red-500">برجاء التأكد من رفع الملف وتجربته أونلاين على جيت هاب.</span>';
                 }
             } catch (error) {
-                document.getElementById('loadingMessage').innerHTML = '<span class="text-red-500">فشل التوصيل التلقائي. تأكد من رفع الملف.</span>';
+                document.getElementById('loadingMessage').innerHTML = '<span class="text-red-500">فشل التوصيل التلقائي. تأكد من سلامة ملف index.html.</span>';
             }
         }
 
@@ -94,7 +104,7 @@
                 allOrders.sort((a, b) => Number(b.orderNumber || 0) - Number(a.orderNumber || 0));
                 renderDashboard();
             }, err => {
-                ordersContainer.innerHTML = '<div class="text-center text-red-600 font-bold p-6 bg-white rounded-2xl border border-red-200">حدث خطأ في جلب البيانات. يرجى تفعيل الـ Rules في Firebase.</div>';
+                ordersContainer.innerHTML = '<div class="text-center text-red-600 font-bold p-6 bg-white rounded-2xl border border-red-200">حدث خطأ في صلاحيات جلب البيانات. يرجى تفعيل الـ Rules في لوحة Firebase.</div>';
             });
         }
 
@@ -153,5 +163,3 @@
                                '</div>' +
                                walletSection +
                                '<div class="space-y-1.5">' + itemsList + '</div>' +
-                               '<div class="pt-2 border-t border-gray-200 flex flex-col sm:flex-row gap-3 items-center justify-between">' +
-                               '<div class="w-full sm:w-1/3">' +
