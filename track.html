@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تتبع حالة الطلب - شوب جنوب سينا</title>
+    <!-- Tailwind CSS -->
+    <script src="https://tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <!-- Firebase SDKs -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div class="bg-[#113946] p-6 text-white text-center">
+            <h1 class="text-xl font-bold flex items-center justify-center gap-2 mb-1">
+                <i class="fas fa-truck-loading"></i> متابعة حالة طلبك
+            </h1>
+            <p class="text-xs text-gray-300">شوب جنوب سينا - التحقق المباشر</p>
+        </div>
+
+        <!-- Form Verification -->
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">رقم الهاتف المسجل بالطلب</label>
+                <input type="tel" id="trackPhone" class="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-[#113946] focus:outline-none text-center font-semibold" placeholder="مثال: 010xxxxxxxx">
+            </div>
+            <button id="trackBtn" class="w-full bg-[#113946] hover:bg-[#0f323e] text-white py-3 rounded-xl font-bold text-base shadow-md transition flex items-center justify-center gap-2">
+                <i class="fas fa-search-location"></i> تحقق من حالة الشحن
+            </button>
+        </div>
+
+        <!-- Progress Tracking Result -->
+        <div id="trackResult" class="hidden p-6 border-t border-gray-100 bg-gray-50 space-y-6">
+            <div class="text-center">
+                <span class="text-xs font-bold text-gray-400 block mb-1">مرحباً أ/ <span id="clientNameHolder" class="text-gray-700"></span></span>
+                <h3 class="text-lg font-black text-gray-900">حالة طلبك الحالي هي:</h3>
+            </div>
+
+            <!-- Stepper -->
+            <div class="relative flex flex-col gap-6 pl-4">
+                <div class="absolute right-4 top-3 bottom-3 w-0.5 bg-gray-200 z-0"></div>
+
+                <div id="step1" class="flex items-start gap-4 relative z-10 opacity-40">
+                    <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white text-sm font-bold step-icon"><i class="fas fa-file-invoice"></i></div>
+                    <div>
+                        <h4 class="font-bold text-sm text-gray-900">تم الطلب</h4>
+                        <p class="text-xs text-gray-500">تم استقبال طلبك بنجاح وجاري تجهيز المنتجات.</p>
+                    </div>
+                </div>
+
+                <div id="step2" class="flex items-start gap-4 relative z-10 opacity-40">
+                    <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white text-sm font-bold step-icon"><i class="fas fa-shipping-fast"></i></div>
+                    <div>
+                        <h4 class="font-bold text-sm text-gray-900">تم الشحن</h4>
+                        <p class="text-xs text-gray-500">تم تسليم شحنتك للمندوب وهي في طريقها إليك.</p>
+                    </div>
+                </div>
+
+                <div id="step3" class="flex items-start gap-4 relative z-10 opacity-40">
+                    <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white text-sm font-bold step-icon"><i class="fas fa-check-circle"></i></div>
+                    <div>
+                        <h4 class="font-bold text-sm text-gray-900">تم التوصيل</h4>
+                        <p class="text-xs text-gray-500">تم تسليم الشحنة وتأكيد الاستلام بنجاح.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db;
+        function initFirebaseAutoTrack() {
+            if (window.firebase && firebase.apps && firebase.apps.length > 0) {
+                db = firebase.firestore();
+            } else {
+                setTimeout(initFirebaseAutoTrack, 500);
+            }
+        }
+
+        document.getElementById('trackBtn').addEventListener('click', () => {
+            const phone = document.getElementById('trackPhone').value.trim();
+            if(!phone) return alert('الرجاء إدخال رقم الهاتف للتحقق!');
+
+            db.collection('orders')
+              .where('phone', '==', phone)
+              .get()
+              .then(querySnapshot => {
+                  if(querySnapshot.empty) {
+                      alert('لم نجد طلبًا مرتبطًا بهذا الرقم.');
+                      document.getElementById('trackResult').classList.add('hidden');
+                      return;
+                  }
+                  querySnapshot.forEach(doc => { showTrackingDetails(doc.data()); });
+              })
+              .catch(err => alert('حدث خطأ أثناء جلب البيانات.'));
+        });
+
+        function showTrackingDetails(order) {
+            document.getElementById('clientNameHolder').innerText = order.name || 'عميلنا';
+            document.getElementById('trackResult').classList.remove('hidden');
+
+            resetSteps();
+            const status = order.status || 'تم الطلب';
+            if (status === 'تم الطلب' || status === 'تم الشحن' || status === 'تم التوصيل') activateStep('step1', 'bg-yellow-500');
+            if (status === 'تم الشحن' || status === 'تم التوصيل') activateStep('step2', 'bg-blue-500');
+            if (status === 'تم التوصيل') activateStep('step3', 'bg-green-500');
+        }
+
+        function resetSteps() {
+            ['step1', 'step2', 'step3'].forEach(id => {
+                const el = document.getElementById(id); el.classList.add('opacity-40');
+                el.querySelector('.step-icon').className = "w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white text-sm font-bold step-icon";
+            });
+        }
+
+        function activateStep(id, bgClass) {
+            const el = document.getElementById(id); el.classList.remove('opacity-40');
+            const icon = el.querySelector('.step-icon'); icon.classList.remove('bg-gray-300'); icon.classList.add(bgClass);
+        }
+
+        window.addEventListener('DOMContentLoaded', initFirebaseAutoTrack);
+    </script>
+</body>
+</html>
