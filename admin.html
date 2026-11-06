@@ -49,27 +49,42 @@
 
         <!-- Orders Container -->
         <div id="ordersContainer" class="space-y-4">
-            <div class="text-center py-12 text-gray-500 font-bold">جاري التعرف الذكي وجلب الطلبات...</div>
+            <div id="loadingMessage" class="text-center py-12 text-gray-500 font-bold">جاري الاتصال والتعرف الذكي على المتجر...</div>
         </div>
     </main>
 
     <script>
-        // ميزة التعرف الذكي والأوتوماتيكي لبيانات Firebase من التطبيق الحالي المفتوح دون تدخل يدوي
         let db;
-        function initFirebaseAuto() {
-            if (window.firebase && firebase.apps && firebase.apps.length > 0) {
-                db = firebase.firestore();
-                fetchOrdersLive();
-            } else {
-                // محاولة الجلب البديلة من التكوينات العالمية المتاحة في الكود القائم
-                setTimeout(initFirebaseAuto, 500);
-            }
-        }
-
         const ordersContainer = document.getElementById('ordersContainer');
         const searchInput = document.getElementById('searchInput');
         const filterStatus = document.getElementById('filterStatus');
         let allOrders = [];
+
+        // قراءة تلقائية لبيانات المشروع الحالي مباشرة من ملف الصفحة الرئيسية دون كتابة يدوية
+        async function fetchConfigAndInit() {
+            try {
+                const response = await fetch('index.html');
+                const text = await response.text();
+                
+                // استخراج كائن firebaseConfig تلقائياً
+                const configMatch = text.match(/firebaseConfig\s*=\s*({[\s\S]*?})/);
+                if (configMatch && configMatch[1]) {
+                    // تحويل النص إلى كائن جافاسكريبت حقيقي بشكل آمن
+                    const cleanConfig = configMatch[1].replace(/'/g, '"').replace(/([a-zA-Z0-9_]+)\s*:/g, '"$1":');
+                    const parsedConfig = JSON.parse(cleanConfig);
+                    
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(parsedConfig);
+                    }
+                    db = firebase.firestore();
+                    fetchOrdersLive();
+                } else {
+                    document.getElementById('loadingMessage').innerText = "برجاء التأكد من وجود كود Firebase في ملف index.html";
+                }
+            } catch (e) {
+                document.getElementById('loadingMessage').innerText = "فشل في التعرف التلقائي على إعدادات متجرك.";
+            }
+        }
 
         function fetchOrdersLive() {
             db.collection('orders').onSnapshot(snapshot => {
@@ -110,10 +125,10 @@
                 `).join('');
 
                 return `
-                    <div class="bg-[#f5efe6] rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
+                    <div class="bg-[#f5efe6] rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4 text-right">
                         <div class="flex justify-between items-start">
                             <span class="text-lg font-black text-[#113946]">${order.totalPrice || order.total || 0} ج.م</span>
-                            <div class="text-right">
+                            <div>
                                 <h3 class="text-base font-black text-gray-900">${order.name || 'بدون اسم'} • ${order.phone || ''}</h3>
                                 <p class="text-sm text-gray-600 font-medium">${order.address || ''}</p>
                             </div>
@@ -150,14 +165,3 @@
 
         function updateStatusDirectly(docId, newStatus) {
             db.collection('orders').doc(docId).update({ status: newStatus })
-            .catch(err => alert("فشل تحديث الحالة: " + err.message));
-        }
-
-        searchInput.addEventListener('input', renderOrdersList);
-        filterStatus.addEventListener('change', renderOrdersList);
-        
-        // التشغيل التلقائي
-        window.addEventListener('DOMContentLoaded', initFirebaseAuto);
-    </script>
-</body>
-</html>
