@@ -35,9 +35,21 @@ sendTo:['حوّل المبلغ على:','Transfer the amount to:'],name:['الا
 addr:['العنوان بالتفصيل','Full address'],ref:['آخر 4 أرقام من رقم الموبايل اللي حوّلت منه','Last 4 digits of the mobile number you sent from'],
 confirm:['أكّدت التحويل، أرسل الطلب','I sent the money, place order'],ok:['تم استلام طلبك','Order received'],
 okp:['هنراجع التحويل ونكلمك على الموبايل لتأكيد التوصيل.','We will check the transfer and call you to confirm delivery.'],
-new:['طلب جديد','New order'],track:['تتبع الطلب','Track order'],statusNew:['تم الطلب','Order placed'],statusShip:['تم الشحن','Shipped'],statusDone:['تم التوصيل','Delivered'],trackHint:['حالة طلبك الحالية','Your current order status'],egp:['ج.م','EGP'],order:['رقم الطلب','Order'],
+new:['طلب جديد','New order'],wa:['أرسل الطلب على واتساب','Send order on WhatsApp'],
+cuT:['اطلب أي حاجة من رأس سدر','Order anything from Ras Sudr'],cuChip:['اطلب من رأس سدر','Order from Ras Sudr'],cuGo:['كمّل الطلب','Continue'],
+cuH:['اكتب اللي عايزه، أكل أو أي حاجة تانية، من رأس سدر فقط، وهنرد عليك بالسعر على واتساب.','Write what you want, food or anything else, from Ras Sudr only. We will reply with the price on WhatsApp.'],
+cuP:['مثال: ٢ شاورما فراخ من مطعم ...','Example: 2 chicken shawarma from ...'],
+quoteNote:['هنراجع طلبك ونبعتلك السعر على واتساب، وتدفع بعد ما تأكد.','We will review your request and send the price on WhatsApp. You pay after you confirm.'],track:['تتبع الطلب','Track order'],statusNew:['تم الطلب','Order placed'],statusShip:['تم الشحن','Shipped'],statusDone:['تم التوصيل','Delivered'],trackHint:['حالة طلبك الحالية','Your current order status'],egp:['ج.م','EGP'],order:['رقم الطلب','Order'],
 };
 const WALLET='01111831604',INSTA='01111831604';
+let waText='',custom='';
+const escH=x=>String(x).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+const waUrl=()=>'https://wa.me/20'+WALLET.replace(/^0/,'')+'?text='+encodeURIComponent(waText);
+function buildMsg(o){const ar=lang==='ar',n=ar?0:1,m=o.method==='wallet'?(ar?'محفظة إلكترونية':'E-wallet'):(ar?'إنستا باي':'InstaPay');
+return [ar?'طلب جديد من شوب جنوب سينا':'New order from Shop South Sinai',(ar?'رقم الطلب: ':'Order: ')+o.code,'',
+...o.items.map(i=>'- '+i.name[n]+(i.id===0?'':' ×'+i.qty)),'',
+...(o.total>0?[(ar?'الإجمالي: ':'Total: ')+o.total+' '+t('egp'),(ar?'الدفع: ':'Payment: ')+m+' ('+(ar?'آخر 4 أرقام: ':'last 4 digits: ')+o.ref+')']:[ar?'السعر هيتحدد بعد المراجعة':'Price to be confirmed']),
+(ar?'الاسم: ':'Name: ')+o.name,(ar?'الموبايل: ':'Mobile: ')+o.phone,(ar?'العنوان: ':'Address: ')+o.addr].join('\n')}
 let lang='ar',view='home',cat='all',q='',cart={},method='wallet',code='',lastOrder=null,stopTrack=null;
 try{lang=localStorage.getItem('lang')||'ar'}catch(e){}
 const L=()=>lang==='ar'?0:1,t=k=>T[k][L()],$=s=>document.querySelector(s);
@@ -53,36 +65,41 @@ return `<nav class="nav"><div>${b('home','🏠','home')}${b('cats','🧭','cats'
 function card(p){return `<div class="card"><div class="thumb" style="background:${p.bg}">${p.img?`<img src="${p.img}" alt="${p.n[L()]}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`:p.e}</div><div class="b"><div class="n">${p.n[L()]}</div><div class="price">${money(p.p)}</div><button class="add" onclick="chg(${p.id},1)">${t('add')}</button></div></div>`}
 function list(){const f=P.filter(p=>(cat==='all'||p.c===cat)&&p.n.join(' ').toLowerCase().includes(q.toLowerCase()));
 return `<div class="grid">${f.map(card).join('')}</div>`}
-function chips(){return `<div class="chips" role="group">${CATS.map(c=>`<button class="chip" aria-pressed="${cat===c[0]}" onclick="cat='${c[0]}';render()">${c[L()+1]}</button>`).join('')}</div>`}
+function chips(){return `<div class="chips" role="group"><button class="chip" style="background:var(--sun);color:var(--on-sun);font-weight:800" onclick="go('ras')">🛍️ ${t('cuChip')}</button>${CATS.map(c=>`<button class="chip" aria-pressed="${cat===c[0]}" onclick="cat='${c[0]}';render()">${c[L()+1]}</button>`).join('')}</div>`}
 function head(){return `<header class="top"><div class="brand">${t('brand')}<small>${lang==='ar'?'Shop South Sinai':'شوب جنوب سينا'}</small></div><button class="lang" onclick="set('${lang==='ar'?'en':'ar'}')">${lang==='ar'?'English':'عربي'}</button></header>`}
 function vHome(){return head()+`<div class="search">🔎<input id="s" value="${q}" placeholder="${t('search')}" aria-label="${t('search')}" oninput="q=this.value;$('#l').innerHTML=list()"></div>
 <section class="hero"><span class="sun"></span><h1>${t('h1')}</h1><p>${t('hp')}</p></section>${chips()}<div id="l">${list()}</div>`}
 function vCats(){return head()+`<h2>${t('cats')}</h2>${chips()}<div id="l">${list()}</div>`}
 function statusLabel(s){return s==='delivered'?t('statusDone'):s==='shipped'?t('statusShip'):t('statusNew')}
 function trackBox(){if(!lastOrder)return '';return `<section class="box" style="margin:14px 0"><b>${t('track')}</b><p>${t('order')}: <b>${lastOrder.code}</b></p><p>${t('trackHint')}: <b>${statusLabel(lastOrder.status)}</b></p><div style="display:flex;gap:6px;align-items:center;margin-top:10px"><span>${t('statusNew')}</span><span>→</span><span>${t('statusShip')}</span><span>→</span><span>${t('statusDone')}</span></div></section>`}
+function vRas(){return head()+`<button class="back" onclick="go('home')">${t('back')}</button><h2>🛍️ ${t('cuT')}</h2><div class="box"><p class="note" style="text-align:start;margin:0 0 8px">${t('cuH')}</p><textarea class="in" id="cu" rows="5" placeholder="${t('cuP')}" oninput="custom=this.value;$('#rk').disabled=!custom.trim()">${escH(custom)}</textarea></div><button class="btn" id="rk" ${custom.trim()?'':'disabled'} onclick="go('pay')">${t('cuGo')}</button>`}
 function vCart(){const ids=Object.keys(cart);
-if(!ids.length)return head()+`<h2>${t('cart')}</h2>${trackBox()}<p class="empty">${t('empty')}</p>`;
+const cu=`<div class="box"><b>🛍️ ${t('cuT')}</b><p class="note" style="text-align:start;margin:4px 0 8px">${t('cuH')}</p><textarea class="in" id="cu" rows="3" placeholder="${t('cuP')}" oninput="custom=this.value;$('#ck').disabled=!(cnt()||custom.trim())">${escH(custom)}</textarea></div>`;
+const btn=`<button class="btn" id="ck" ${cnt()||custom.trim()?'':'disabled'} onclick="go('pay')">${t('checkout')}</button>`;
+if(!ids.length)return head()+`<h2>${t('cart')}</h2>${trackBox()}<p class="empty">${t('empty')}</p>${cu}${btn}`;
 return head()+`<h2>${t('cart')}</h2>${trackBox()}`+ids.map(i=>{const p=P.find(x=>x.id==i);return `<div class="row"><div class="thumb" style="background:${p.bg}">${p.img?`<img src="${p.img}" alt="${p.n[L()]}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`:p.e}</div><div class="i"><div>${p.n[L()]}</div><div class="price">${money(p.p*cart[i])}</div></div><div class="q"><button aria-label="-" onclick="chg(${i},-1)">−</button><span>${cart[i]}</span><button aria-label="+" onclick="chg(${i},1)">+</button></div></div>`}).join('')+
-`<div class="total"><span>${t('total')}</span><span>${money(sum())}</span></div><button class="btn" onclick="go('pay')">${t('checkout')}</button>`}
-function vPay(){const w=method==='wallet';
+`<div class="total"><span>${t('total')}</span><span>${money(sum())}</span></div>${cu}${btn}`}
+function vPay(){const w=method==='wallet',pay=sum()>0;
 return head()+`<button class="back" onclick="go('cart')">${t('back')}</button><h2>${t('pay')}</h2>
-<button class="opt" aria-pressed="${w}" onclick="method='wallet';render()"><b>📱 ${t('wallet')}</b><span>${t('walletS')}</span></button>
+${pay?`<button class="opt" aria-pressed="${w}" onclick="method='wallet';render()"><b>📱 ${t('wallet')}</b><span>${t('walletS')}</span></button>
 <button class="opt" aria-pressed="${!w}" onclick="method='insta';render()"><b>🏦 ${t('insta')}</b><span>${t('instaS')}</span></button>
-<div class="box">${t('sendTo')} <code>${w?WALLET:INSTA}</code><br><b>${money(sum())}</b></div>
+<div class="box">${t('sendTo')} <code>${w?WALLET:INSTA}</code><br><b>${money(sum())}</b></div>`:`<div class="box">${t('quoteNote')}</div>`}
 <label for="f1">${t('name')}</label><input class="in" id="f1" oninput="chk()" autocomplete="name">
 <label for="f2">${t('phone')}</label><input class="in" id="f2" inputmode="tel" oninput="chk()" autocomplete="tel">
 <label for="f3">${t('addr')}</label><input class="in" id="f3" oninput="chk()" autocomplete="street-address">
-<label for="f4">${t('ref')}</label><input class="in" id="f4" inputmode="numeric" maxlength="4" autocomplete="off" oninput="this.value=this.value.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^0-9]/g,'');chk()">
+${pay?`<label for="f4">${t('ref')}</label><input class="in" id="f4" inputmode="numeric" maxlength="4" autocomplete="off" oninput="this.value=this.value.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^0-9]/g,'');chk()">`:''}
 <br><button class="btn" id="go" disabled onclick="place()">${t('confirm')}</button>`}
-function chk(){$('#go').disabled=!(['#f1','#f2','#f3'].every(s=>$(s).value.trim().length>1)&&/^[0-9]{4}$/.test($('#f4').value))}
+function chk(){$('#go').disabled=!(['#f1','#f2','#f3'].every(s=>$(s).value.trim().length>1)&&(!$('#f4')||/^[0-9]{4}$/.test($('#f4').value)))}
 async function place(){code='SS-'+Date.now().toString().slice(-8);
-const o={code,method,total:sum(),name:$('#f1').value.trim(),phone:$('#f2').value.trim(),addr:$('#f3').value.trim(),ref:$('#f4').value.trim(),
+const o={code,method,total:sum(),name:$('#f1').value.trim(),phone:$('#f2').value.trim(),addr:$('#f3').value.trim(),ref:$('#f4')?$('#f4').value.trim():'',
 items:Object.entries(cart).map(([i,n])=>{const p=P.find(x=>x.id==i);return{id:p.id,name:p.n,qty:n,price:p.p}})};
-try{if(window.saveOrder){const saved=await saveOrder(o);lastOrder={id:saved.id,code,status:'new',phone:o.phone};try{localStorage.setItem('shop_last_order',JSON.stringify(lastOrder))}catch(e){};watchOrder(saved.id)}else{lastOrder={code,status:'new',phone:o.phone};}cart={};go('done')}catch(e){alert(lang==='ar'?'تعذر إرسال الطلب. حاول مرة أخرى.':'Could not submit order. Please try again.');console.warn(e)}} 
+if(custom.trim())o.items.push({id:0,name:['🛍️ طلب خاص من رأس سدر: '+custom.trim(),'🛍️ Custom request (Ras Sudr): '+custom.trim()],qty:1,price:0});
+waText=buildMsg(o);
+try{if(window.saveOrder){const saved=await saveOrder(o);lastOrder={id:saved.id,code,status:'new',phone:o.phone};try{localStorage.setItem('shop_last_order',JSON.stringify(lastOrder))}catch(e){};watchOrder(saved.id)}else{lastOrder={code,status:'new',phone:o.phone};}cart={};custom='';go('done')}catch(e){alert(lang==='ar'?'تعذر إرسال الطلب. حاول مرة أخرى.':'Could not submit order. Please try again.');console.warn(e)}} 
 function watchOrder(id){if(stopTrack)stopTrack();if(window.watchOrderStatus)stopTrack=window.watchOrderStatus(id,s=>{if(lastOrder){lastOrder.status=s;try{localStorage.setItem('shop_last_order',JSON.stringify(lastOrder))}catch(e){}if(view==='cart'||view==='done')render()}})}
-function vDone(){return head()+`<div class="done"><div class="ok">✅</div><h2>${t('ok')}</h2><p>${t('order')}: <b>${code}</b></p>${trackBox()}<p>${t('okp')}</p><br><button class="btn" onclick="go('cart')">${t('track')}</button><button class="opt" onclick="go('home')">${t('new')}</button></div>`}
+function vDone(){return head()+`<div class="done"><div class="ok">✅</div><h2>${t('ok')}</h2><p>${t('order')}: <b>${code}</b></p>${trackBox()}<p>${t('okp')}</p><br><a class="btn" style="display:block;text-align:center;text-decoration:none;background:#25D366;color:#0B2A36;margin-bottom:10px" href="${waUrl()}" target="_blank" rel="noopener">💬 ${t('wa')}</a><button class="btn" onclick="go('cart')">${t('track')}</button><button class="opt" onclick="go('home')">${t('new')}</button></div>`}
 function render(){const d=document.documentElement;d.lang=lang;d.dir=lang==='ar'?'rtl':'ltr';
-const v={home:vHome,cats:vCats,cart:vCart,pay:vPay,done:vDone}[view]();
+const v={home:vHome,cats:vCats,ras:vRas,cart:vCart,pay:vPay,done:vDone}[view]();
 $('#app').innerHTML=v+nav();document.title=t('brand')}
 render();
 </script>
