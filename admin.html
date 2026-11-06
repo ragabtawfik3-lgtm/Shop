@@ -30,7 +30,7 @@ const P=[
 {id:8,c:'tech',e:'⌚',bg:'#B7D3C4',p:1250,n:['ساعة ذكية','Smart watch']}];
 const $=s=>document.querySelector(s),A=$('#app');
 let user=null,tab='orders',orders=[],prods=[],msg='',unsub=[];
-const ST={new:'جديد',confirmed:'تم التأكيد',shipped:'تم الشحن',cancelled:'ملغي'};
+const ST={new:'تم الطلب',shipped:'تم الشحن',delivered:'تم التوصيل'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const er=e=>{msg=e.message;draw()};
 onAuthStateChanged(auth,u=>{user=u;unsub.forEach(f=>f());unsub=[];
