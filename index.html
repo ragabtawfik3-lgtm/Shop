@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>شوب جنوب سينا · Shop South Sinai</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0E7C86">
+</head>
+<body>
+<div id="app"></div>
+<script>
+let P=[
+{id:1,c:'food',e:'🍯',bg:'#F2C85B',p:180,n:['عسل جبلي من سيناء','Sinai mountain honey']},
+{id:2,c:'food',e:'🍵',bg:'#9CC9A1',p:65,n:['أعشاب بدوية للشاي','Bedouin tea herbs']},
+{id:3,c:'beach',e:'🤿',bg:'#7CC8D6',p:420,n:['ماسك غطس','Snorkel mask']},
+{id:4,c:'beach',e:'👜',bg:'#F0B48A',p:260,n:['شنطة شاطئ قش','Straw beach bag']},
+{id:5,c:'fashion',e:'👕',bg:'#D8CDB4',p:350,n:['قميص كتان','Linen shirt']},
+{id:6,c:'fashion',e:'👒',bg:'#E7B0A0',p:140,n:['قبعة شمس','Sun hat']},
+{id:7,c:'tech',e:'🎧',bg:'#A9B8E0',p:890,n:['سماعات لاسلكية','Wireless earbuds']},
+{id:8,c:'tech',e:'⌚',bg:'#B7D3C4',p:1250,n:['ساعة ذكية','Smart watch']}];
+const CATS=[['all','الكل','All'],['food','طعام','Food'],['beach','شاطئ','Beach'],['fashion','أزياء','Fashion'],['tech','إلكترونيات','Electronics']];
+const T={
+brand:['شوب جنوب سينا','Shop South Sinai'],sub:['تسوّق من قلب جنوب سيناء','Shopping from the heart of South Sinai'],
+search:['ابحث عن منتج','Search for a product'],h1:['من الجبل والبحر إلى بيتك','From the mountains and sea to your door'],
+hp:['توصيل لكل مدن جنوب سيناء','Delivery across South Sinai'],add:['أضف للسلة','Add to cart'],
+home:['الرئيسية','Home'],cats:['الأقسام','Categories'],cart:['السلة','Cart'],
+empty:['السلة فاضية. أضف منتجًا لتبدأ.','Your cart is empty. Add a product to start.'],
+total:['الإجمالي','Total'],checkout:['اكتب بيانات الدفع','Continue to payment'],back:['رجوع','Back'],
+pay:['طريقة الدفع','Payment method'],wallet:['محفظة إلكترونية','E-wallet'],walletS:['فودافون كاش، أورنج كاش، وغيرها','Vodafone Cash, Orange Cash and others'],
+insta:['إنستا باي','InstaPay'],instaS:['حوّل على عنوان إنستا باي','Transfer to our InstaPay address'],
+sendTo:['حوّل المبلغ على:','Transfer the amount to:'],name:['الاسم','Name'],phone:['رقم الموبايل','Mobile number'],
+addr:['العنوان بالتفصيل','Full address'],ref:['آخر 4 أرقام من رقم الموبايل اللي حوّلت منه','Last 4 digits of the mobile number you sent from'],
+confirm:['أكّدت التحويل، أرسل الطلب','I sent the money, place order'],ok:['تم استلام طلبك','Order received'],
+okp:['هنراجع التحويل ونكلمك على الموبايل لتأكيد التوصيل.','We will check the transfer and call you to confirm delivery.'],
+new:['طلب جديد','New order'],wa:['أرسل الطلب على واتساب','Send order on WhatsApp'],
+cuT:['اطلب أي حاجة من رأس سدر','Order anything from Ras Sudr'],cuChip:['اطلب من رأس سدر','Order from Ras Sudr'],cuGo:['كمّل الطلب','Continue'],
+cuH:['اكتب اللي عايزه، أكل أو أي حاجة تانية، من رأس سدر فقط، وهنرد عليك بالسعر على واتساب.','Write what you want, food or anything else, from Ras Sudr only. We will reply with the price on WhatsApp.'],
+cuP:['مثال: ٢ شاورما فراخ من مطعم ...','Example: 2 chicken shawarma from ...'],
+quoteNote:['هنراجع طلبك ونبعتلك السعر على واتساب، وتدفع بعد ما تأكد.','We will review your request and send the price on WhatsApp. You pay after you confirm.'],track:['تتبع الطلب','Track order'],statusNew:['تم الطلب','Order placed'],statusShip:['تم الشحن','Shipped'],statusDone:['تم التوصيل','Delivered'],trackHint:['حالة طلبك الحالية','Your current order status'],egp:['ج.م','EGP'],order:['رقم الطلب','Order'],
+};
+const WALLET='01111831604',INSTA='01111831604';
+let waText='',custom='';
+const escH=x=>String(x).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+const waUrl=()=>'https://wa.me/20'+WALLET.replace(/^0/,'')+'?text='+encodeURIComponent(waText);
+function buildMsg(o){const ar=lang==='ar',n=ar?0:1,m=o.method==='wallet'?(ar?'محفظة إلكترونية':'E-wallet'):(ar?'إنستا باي':'InstaPay');
+return [ar?'طلب جديد من شوب جنوب سينا':'New order from Shop South Sinai',(ar?'رقم الطلب: ':'Order: ')+o.code,'',
+...o.items.map(i=>'- '+i.name[n]+(i.id===0?'':' ×'+i.qty)),'',
+...(o.total>0?[(ar?'الإجمالي: ':'Total: ')+o.total+' '+t('egp'),(ar?'الدفع: ':'Payment: ')+m+' ('+(ar?'آخر 4 أرقام: ':'last 4 digits: ')+o.ref+')']:[ar?'السعر هيتحدد بعد المراجعة':'Price to be confirmed']),
+(ar?'الاسم: ':'Name: ')+o.name,(ar?'الموبايل: ':'Mobile: ')+o.phone,(ar?'العنوان: ':'Address: ')+o.addr].join('\n')}
+let lang='ar',view='home',cat='all',q='',cart={},method='wallet',code='',lastOrder=null,stopTrack=null;
+try{lang=localStorage.getItem('lang')||'ar'}catch(e){}
+const L=()=>lang==='ar'?0:1,t=k=>T[k][L()],$=s=>document.querySelector(s);
+const cnt=()=>Object.values(cart).reduce((a,b)=>a+b,0);
+const sum=()=>Object.entries(cart).reduce((a,[i,n])=>a+P.find(p=>p.id==i).p*n,0);
+const money=n=>n.toLocaleString(lang==='ar'?'ar-EG':'en-US')+' '+t('egp');
+function setP(a){P=a.filter(p=>p.on!==false);render()}
+function set(l){lang=l;try{localStorage.setItem('lang',l)}catch(e){}render()}
+function chg(id,d){cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];render()}
+function go(v){view=v;scrollTo(0,0);render()}
+function nav(){const b=(v,ic,k)=>`<button onclick="go('${v}')" ${view===v?'aria-current="page"':''}><b>${ic}</b>${t(k)}${v==='cart'&&cnt()?`<span class="badge">${cnt()}</span>`:''}</button>`;
+return `<nav class="nav"><div>${b('home','🏠','home')}${b('cats','🧭','cats')}${b('cart','🛒','cart')}</div></nav>`}
+function card(p){return `<div class="card"><div class="thumb" style="background:${p.bg}">${p.img?`<img src="${p.img}" alt="${p.n[L()]}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`:p.e}</div><div class="b"><div class="n">${p.n[L()]}</div><div class="price">${money(p.p)}</div><button class="add" onclick="chg(${p.id},1)">${t('add')}</button></div></div>`}
+function list(){const f=P.filter(p=>(cat==='all'||p.c===cat)&&p.n.join(' ').toLowerCase().includes(q.toLowerCase()));
+return `<div class="grid">${f.map(card).join('')}</div>`}
+function chips(){return `<div class="chips" role="group"><button class="chip" style="background:var(--sun);color:var(--on-sun);font-weight:800" onclick="go('ras')">🛍️ ${t('cuChip')}</button>${CATS.map(c=>`<button class="chip" aria-pressed="${cat===c[0]}" onclick="cat='${c[0]}';render()">${c[L()+1]}</button>`).join('')}</div>`}
+function head(){return `<header class="top"><div class="brand">${t('brand')}<small>${lang==='ar'?'Shop South Sinai':'شوب جنوب سينا'}</small></div><button class="lang" onclick="set('${lang==='ar'?'en':'ar'}')">${lang==='ar'?'English':'عربي'}</button></header>`}
+function vHome(){return head()+`<div class="search">🔎<input id="s" value="${q}" placeholder="${t('search')}" aria-label="${t('search')}" oninput="q=this.value;$('#l').innerHTML=list()"></div>
+<section class="hero"><span class="sun"></span><h1>${t('h1')}</h1><p>${t('hp')}</p></section>${chips()}<div id="l">${list()}</div>`}
+function vCats(){return head()+`<h2>${t('cats')}</h2>${chips()}<div id="l">${list()}</div>`}
+function statusLabel(s){return s==='delivered'?t('statusDone'):s==='shipped'?t('statusShip'):t('statusNew')}
+function trackBox(){if(!lastOrder)return '';return `<section class="box" style="margin:14px 0"><b>${t('track')}</b><p>${t('order')}: <b>${lastOrder.code}</b></p><p>${t('trackHint')}: <b>${statusLabel(lastOrder.status)}</b></p><div style="display:flex;gap:6px;align-items:center;margin-top:10px"><span>${t('statusNew')}</span><span>→</span><span>${t('statusShip')}</span><span>→</span><span>${t('statusDone')}</span></div></section>`}
+function vRas(){return head()+`<button class="back" onclick="go('home')">${t('back')}</button><h2>🛍️ ${t('cuT')}</h2><div class="box"><p class="note" style="text-align:start;margin:0 0 8px">${t('cuH')}</p><textarea class="in" id="cu" rows="5" placeholder="${t('cuP')}" oninput="custom=this.value;$('#rk').disabled=!custom.trim()">${escH(custom)}</textarea></div><button class="btn" id="rk" ${custom.trim()?'':'disabled'} onclick="go('pay')">${t('cuGo')}</button>`}
+function vCart(){const ids=Object.keys(cart);
+const cu=`<div class="box"><b>🛍️ ${t('cuT')}</b><p class="note" style="text-align:start;margin:4px 0 8px">${t('cuH')}</p><textarea class="in" id="cu" rows="3" placeholder="${t('cuP')}" oninput="custom=this.value;$('#ck').disabled=!(cnt()||custom.trim())">${escH(custom)}</textarea></div>`;
+const btn=`<button class="btn" id="ck" ${cnt()||custom.trim()?'':'disabled'} onclick="go('pay')">${t('checkout')}</button>`;
+if(!ids.length)return head()+`<h2>${t('cart')}</h2>${trackBox()}<p class="empty">${t('empty')}</p>${cu}${btn}`;
+return head()+`<h2>${t('cart')}</h2>${trackBox()}`+ids.map(i=>{const p=P.find(x=>x.id==i);return `<div class="row"><div class="thumb" style="background:${p.bg}">${p.img?`<img src="${p.img}" alt="${p.n[L()]}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`:p.e}</div><div class="i"><div>${p.n[L()]}</div><div class="price">${money(p.p*cart[i])}</div></div><div class="q"><button aria-label="-" onclick="chg(${i},-1)">−</button><span>${cart[i]}</span><button aria-label="+" onclick="chg(${i},1)">+</button></div></div>`}).join('')+
+`<div class="total"><span>${t('total')}</span><span>${money(sum())}</span></div>${cu}${btn}`}
+function vPay(){const w=method==='wallet',pay=sum()>0;
+return head()+`<button class="back" onclick="go('cart')">${t('back')}</button><h2>${t('pay')}</h2>
+${pay?`<button class="opt" aria-pressed="${w}" onclick="method='wallet';render()"><b>📱 ${t('wallet')}</b><span>${t('walletS')}</span></button>
+<button class="opt" aria-pressed="${!w}" onclick="method='insta';render()"><b>🏦 ${t('insta')}</b><span>${t('instaS')}</span></button>
+<div class="box">${t('sendTo')} <code>${w?WALLET:INSTA}</code><br><b>${money(sum())}</b></div>`:`<div class="box">${t('quoteNote')}</div>`}
+<label for="f1">${t('name')}</label><input class="in" id="f1" oninput="chk()" autocomplete="name">
+<label for="f2">${t('phone')}</label><input class="in" id="f2" inputmode="tel" oninput="chk()" autocomplete="tel">
+<label for="f3">${t('addr')}</label><input class="in" id="f3" oninput="chk()" autocomplete="street-address">
+${pay?`<label for="f4">${t('ref')}</label><input class="in" id="f4" inputmode="numeric" maxlength="4" autocomplete="off" oninput="this.value=this.value.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^0-9]/g,'');chk()">`:''}
+<br><button class="btn" id="go" disabled onclick="place()">${t('confirm')}</button>`}
+function chk(){$('#go').disabled=!(['#f1','#f2','#f3'].every(s=>$(s).value.trim().length>1)&&(!$('#f4')||/^[0-9]{4}$/.test($('#f4').value)))}
+async function place(){code='SS-'+Date.now().toString().slice(-8);
+const o={code,method,total:sum(),name:$('#f1').value.trim(),phone:$('#f2').value.trim(),addr:$('#f3').value.trim(),ref:$('#f4')?$('#f4').value.trim():'',
+items:Object.entries(cart).map(([i,n])=>{const p=P.find(x=>x.id==i);return{id:p.id,name:p.n,qty:n,price:p.p}})};
+if(custom.trim())o.items.push({id:0,name:['🛍️ طلب خاص من رأس سدر: '+custom.trim(),'🛍️ Custom request (Ras Sudr): '+custom.trim()],qty:1,price:0});
+waText=buildMsg(o);
+try{if(window.saveOrder){const saved=await saveOrder(o);lastOrder={id:saved.id,code,status:'new',phone:o.phone};try{localStorage.setItem('shop_last_order',JSON.stringify(lastOrder))}catch(e){};watchOrder(saved.id)}else{lastOrder={code,status:'new',phone:o.phone};}cart={};custom='';go('done')}catch(e){alert(lang==='ar'?'تعذر إرسال الطلب. حاول مرة أخرى.':'Could not submit order. Please try again.');console.warn(e)}} 
+function watchOrder(id){if(stopTrack)stopTrack();if(window.watchOrderStatus)stopTrack=window.watchOrderStatus(id,s=>{if(lastOrder){lastOrder.status=s;try{localStorage.setItem('shop_last_order',JSON.stringify(lastOrder))}catch(e){}if(view==='cart'||view==='done')render()}})}
+function vDone(){return head()+`<div class="done"><div class="ok">✅</div><h2>${t('ok')}</h2><p>${t('order')}: <b>${code}</b></p>${trackBox()}<p>${t('okp')}</p><br><a class="btn" style="display:block;text-align:center;text-decoration:none;background:#25D366;color:#0B2A36;margin-bottom:10px" href="${waUrl()}" target="_blank" rel="noopener">💬 ${t('wa')}</a><button class="btn" onclick="go('cart')">${t('track')}</button><button class="opt" onclick="go('home')">${t('new')}</button></div>`}
+function render(){const d=document.documentElement;d.lang=lang;d.dir=lang==='ar'?'rtl':'ltr';
+const v={home:vHome,cats:vCats,ras:vRas,cart:vCart,pay:vPay,done:vDone}[view]();
+$('#app').innerHTML=v+nav();document.title=t('brand')}
+render();
+</script>
+<script type="module">
+import {firebaseConfig} from './firebase-config.js';
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getFirestore,collection,getDocs,addDoc,serverTimestamp,doc,onSnapshot} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+try{const db=getFirestore(initializeApp(firebaseConfig));
+window.saveOrder=o=>addDoc(collection(db,'orders'),{...o,status:'new',createdAt:serverTimestamp()});
+window.watchOrderStatus=(id,cb)=>onSnapshot(doc(db,'orders',id),s=>{if(s.exists())cb(s.data().status||'new')});
+try{lastOrder=JSON.parse(localStorage.getItem('shop_last_order')||'null');if(lastOrder?.id)watchOrder(lastOrder.id)}catch(e){}
+const snap=await getDocs(collection(db,'products'));
+if(!snap.empty)setP(snap.docs.map(d=>d.data()));
+}catch(e){console.warn(e)}
+</script>
+</body>
+</html>
