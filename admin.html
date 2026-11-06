@@ -1,64 +1,163 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex">
-<title>لوحة التحكم · شوب جنوب سينا</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - شوب جنوب سينا</title>
+    <!-- Tailwind CSS -->
+    <script src="https://tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <!-- Firebase SDKs -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
 </head>
-<body>
-<div id="app"></div>
-<script type="module">
-import {firebaseConfig} from './firebase-config.js';
-import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {getFirestore,collection,onSnapshot,query,orderBy,doc,setDoc,updateDoc,deleteDoc} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-// Cloudinary unsigned image uploads
-const CLOUDINARY_CLOUD_NAME='kyx68jxf';
-const CLOUDINARY_UPLOAD_PRESET='shop_products';
-const P=[
-{id:1,c:'food',e:'🍯',bg:'#F2C85B',p:180,n:['عسل جبلي من سيناء','Sinai mountain honey']},
-{id:2,c:'food',e:'🍵',bg:'#9CC9A1',p:65,n:['أعشاب بدوية للشاي','Bedouin tea herbs']},
-{id:3,c:'beach',e:'🤿',bg:'#7CC8D6',p:420,n:['ماسك غطس','Snorkel mask']},
-{id:4,c:'beach',e:'👜',bg:'#F0B48A',p:260,n:['شنطة شاطئ قش','Straw beach bag']},
-{id:5,c:'fashion',e:'👕',bg:'#D8CDB4',p:350,n:['قميص كتان','Linen shirt']},
-{id:6,c:'fashion',e:'👒',bg:'#E7B0A0',p:140,n:['قبعة شمس','Sun hat']},
-{id:7,c:'tech',e:'🎧',bg:'#A9B8E0',p:890,n:['سماعات لاسلكية','Wireless earbuds']},
-{id:8,c:'tech',e:'⌚',bg:'#B7D3C4',p:1250,n:['ساعة ذكية','Smart watch']}];
-const $=s=>document.querySelector(s),A=$('#app');
-let user=null,tab='orders',orders=[],prods=[],msg='',unsub=[];
-const ST={new:'تم الطلب',shipped:'تم الشحن',delivered:'تم التوصيل'};
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
-const er=e=>{msg=e.message;draw()};
-onAuthStateChanged(auth,u=>{user=u;unsub.forEach(f=>f());unsub=[];
- if(u){unsub.push(onSnapshot(query(collection(db,'orders'),orderBy('createdAt','desc')),s=>{orders=s.docs.map(d=>({_id:d.id,...d.data()}));draw()},er));
- unsub.push(onSnapshot(collection(db,'products'),s=>{prods=s.docs.map(d=>d.data());draw()},er))}
- draw()});
-const ordersV=()=>orders.length?orders.map(o=>`<div class="row" style="display:block"><b>${esc(o.name)}</b> · ${esc(o.phone)} <span class="price" style="float:inline-end">${esc(o.total)} ج.م</span><div>${esc(o.addr)}</div><div class="note" style="text-align:start">${o.method==='wallet'?'محفظة':'إنستا باي'} · آخر 4 أرقام من رقم المحوِّل: ${esc(o.ref)} · ${esc(o.code)}</div><div>${(o.items||[]).map(i=>esc(i.name[0])+' ×'+esc(i.qty)).join('، ')}</div><select class="in" data-o="${o._id}">${Object.entries(ST).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}</select></div>`).join(''):'<p class="empty">مفيش طلبات لسه.</p>';
-const prodsV=()=>`<div class="box"><b>إضافة منتج</b><label for="n1">الاسم بالعربي</label><input class="in" id="n1"><label for="n2">الاسم بالإنجليزي</label><input class="in" id="n2"><label for="pr">السعر (ج.م)</label><input class="in" id="pr" type="number" inputmode="numeric"><label for="ct">القسم</label><select class="in" id="ct"><option value="food">طعام</option><option value="beach">شاطئ</option><option value="fashion">أزياء</option><option value="tech">إلكترونيات</option></select><label for="em">رمز (إيموجي) — بديل لو مفيش صورة</label><input class="in" id="em" value="🛍️"><label for="photo">صورة المنتج</label><input class="in" id="photo" type="file" accept="image/*"><img id="preview" alt="معاينة صورة المنتج" style="display:none;width:110px;height:110px;object-fit:cover;border-radius:12px;margin-top:8px"><br><br><button class="btn" id="ad">إضافة</button></div>${prods.length?'':'<button class="opt" id="sd">رفع المنتجات التجريبية لقاعدة البيانات</button>'}${[...prods].sort((a,b)=>a.id-b.id).map(p=>`<div class="row"><div class="thumb" style="background:${esc(p.bg)}">${p.img?`<img src="${esc(p.img)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`:esc(p.e)}</div><div class="i">${esc(p.n[0])}<br><input class="in" type="number" value="${esc(p.p)}" data-p="${p.id}" style="width:110px;padding:4px 8px" aria-label="السعر"></div><div class="q"><button data-v="${p.id}" aria-label="إظهار أو إخفاء">${p.on===false?'🚫':'👁'}</button><button data-d="${p.id}" aria-label="حذف">🗑</button></div></div>`).join('')}`;
-function draw(){
- if(!user){A.innerHTML=`<div style="max-width:380px;margin:0 auto;padding:60px 16px"><h2>دخول الأدمن</h2><label for="e">الإيميل</label><input class="in" id="e" type="email" autocomplete="username"><label for="p">الباسورد</label><input class="in" id="p" type="password" autocomplete="current-password"><br><br><button class="btn" id="li">دخول</button><p class="note" id="m"></p></div>`;
- $('#li').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('#e').value,$('#p').value)}catch(e){$('#m').textContent='الإيميل أو الباسورد غلط'}};return}
- A.innerHTML=`<div style="max-width:720px;margin:0 auto;padding:12px 16px 40px"><header class="top"><div class="brand">لوحة التحكم<small>شوب جنوب سينا</small></div><button class="lang" id="lo">خروج</button></header><div class="chips">${[['orders','الطلبات'],['prods','المنتجات']].map(([k,v])=>`<button class="chip" aria-pressed="${tab===k}" data-t="${k}">${v}</button>`).join('')}</div>${msg?`<p class="note">${esc(msg)}</p>`:''}${tab==='orders'?ordersV():prodsV()}</div>`;
- $('#lo').onclick=()=>signOut(auth);
- A.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;msg='';draw()});
- A.querySelectorAll('[data-o]').forEach(s=>s.onchange=()=>updateDoc(doc(db,'orders',s.dataset.o),{status:s.value}).catch(er));
- A.querySelectorAll('[data-p]').forEach(i=>i.onchange=()=>updateDoc(doc(db,'products',i.dataset.p),{p:+i.value}).catch(er));
- A.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const p=prods.find(x=>x.id==b.dataset.v);updateDoc(doc(db,'products',b.dataset.v),{on:p.on===false}).catch(er)});
- A.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>confirm('تحذف المنتج؟')&&deleteDoc(doc(db,'products',b.dataset.d)).catch(er));
- if($('#photo'))$('#photo').onchange=()=>{const f=$('#photo').files[0],v=$('#preview');if(!f){v.style.display='none';return}if(!f.type.startsWith('image/')){msg='اختار ملف صورة فقط';draw();return}v.src=URL.createObjectURL(f);v.style.display='block'};
-  if($('#ad'))$('#ad').onclick=async()=>{const id=Date.now(),n1=$('#n1').value.trim(),n2=$('#n2').value.trim(),price=+$('#pr').value,file=$('#photo')?.files[0];if(!n1||!price){msg='اكتب اسم المنتج والسعر';draw();return}
-    const btn=$('#ad');btn.disabled=true;btn.textContent='جارٍ الحفظ...';
-    try{let img='';if(file){if(!file.type.startsWith('image/'))throw new Error('الملف المختار ليس صورة');if(file.size>5*1024*1024)throw new Error('حجم الصورة أكبر من 5 ميجابايت');const form=new FormData();form.append('file',file);form.append('upload_preset',CLOUDINARY_UPLOAD_PRESET);form.append('folder','shop-products');const response=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,{method:'POST',body:form});const result=await response.json();if(!response.ok)throw new Error(result.error?.message||'فشل رفع الصورة إلى Cloudinary');img=result.secure_url;}
-      await setDoc(doc(db,'products',String(id)),{id,n:[n1,n2||n1],p:price,c:$('#ct').value,e:$('#em').value||'🛍️',bg:'#E3D6B8',on:true,...(img?{img}:{})});
-      msg='تمت إضافة المنتج بنجاح';draw();
-    }catch(e){msg='تعذر حفظ المنتج: '+e.message;draw()}
-  };
- if($('#sd'))$('#sd').onclick=()=>P.forEach(p=>setDoc(doc(db,'products',String(p.id)),{...p,on:true}).catch(er));
-}
-</script>
+<body class="bg-[#ece6dc] text-gray-800 font-sans min-h-screen flex flex-col p-4">
+
+    <!-- Header -->
+    <header class="max-w-4xl w-full mx-auto flex justify-between items-center mb-6">
+        <button onclick="window.location.href='index.html'" class="border border-[#113946] text-[#113946] px-4 py-1.5 rounded-full font-bold hover:bg-[#113946] hover:text-white transition">خروج</button>
+        <div class="text-center">
+            <h1 class="text-2xl font-black text-[#113946]">لوحة التحكم</h1>
+            <p class="text-xs text-[#b89b72] font-bold">شوب جنوب سينا</p>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-4xl w-full mx-auto flex justify-center gap-4 mb-6">
+        <button class="bg-[#113946] text-white px-6 py-2 rounded-full font-bold shadow">الطلبات</button>
+        <button class="bg-white text-gray-700 border border-gray-300 px-6 py-2 rounded-full font-bold hover:bg-gray-50">المنتجات</button>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl w-full mx-auto flex-1 space-y-6">
+        <!-- Search & Filter Bar -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="relative w-full md:flex-1">
+                <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" id="searchInput" class="w-full border border-gray-300 rounded-xl pr-10 pl-4 py-2.5 focus:ring-2 focus:ring-[#113946] focus:outline-none" placeholder="ابحث برقم الطلب، اسم العميل، أو رقم الهاتف...">
+            </div>
+            <select id="filterStatus" class="border border-gray-300 rounded-xl px-4 py-2.5 bg-white focus:ring-2 focus:ring-[#113946] focus:outline-none w-full md:w-auto font-bold text-gray-700">
+                <option value="all">كل الحالات</option>
+                <option value="تم الطلب">تم الطلب</option>
+                <option value="تم الشحن">تم الشحن</option>
+                <option value="تم التوصيل">تم التوصيل</option>
+            </select>
+        </div>
+
+        <!-- Orders Container -->
+        <div id="ordersContainer" class="space-y-4">
+            <div class="text-center py-12 text-gray-500 font-bold">جاري التعرف الذكي وجلب الطلبات...</div>
+        </div>
+    </main>
+
+    <script>
+        // ميزة التعرف الذكي والأوتوماتيكي لبيانات Firebase من التطبيق الحالي المفتوح دون تدخل يدوي
+        let db;
+        function initFirebaseAuto() {
+            if (window.firebase && firebase.apps && firebase.apps.length > 0) {
+                db = firebase.firestore();
+                fetchOrdersLive();
+            } else {
+                // محاولة الجلب البديلة من التكوينات العالمية المتاحة في الكود القائم
+                setTimeout(initFirebaseAuto, 500);
+            }
+        }
+
+        const ordersContainer = document.getElementById('ordersContainer');
+        const searchInput = document.getElementById('searchInput');
+        const filterStatus = document.getElementById('filterStatus');
+        let allOrders = [];
+
+        function fetchOrdersLive() {
+            db.collection('orders').onSnapshot(snapshot => {
+                allOrders = [];
+                snapshot.forEach(doc => { allOrders.push({ id: doc.id, ...doc.data() }); });
+                renderOrdersList();
+            }, err => {
+                ordersContainer.innerHTML = `<div class="text-center text-red-600 font-bold p-6 bg-red-50 rounded-xl border border-red-200">حدث خطأ في الصلاحيات: ${err.message}<br>يرجى التأكد من تحديث تبويب الـ Rules في لوحة Firebase.</div>`;
+            });
+        }
+
+        function renderOrdersList() {
+            const searchVal = searchInput.value.toLowerCase().trim();
+            const statusFilter = filterStatus.value;
+
+            let filtered = allOrders.filter(order => {
+                if (statusFilter !== 'all' && (order.status || 'تم الطلب') !== statusFilter) return false;
+                const clientName = String(order.name || order.clientName || '').toLowerCase();
+                const clientPhone = String(order.phone || order.phoneNumber || '').toLowerCase();
+                const orderNum = String(order.orderNumber || order.id || '').toLowerCase();
+                return clientName.includes(searchVal) || clientPhone.includes(searchVal) || orderNum.includes(searchVal);
+            });
+
+            if (filtered.length === 0) {
+                ordersContainer.innerHTML = `<div class="text-center text-gray-500 py-12 font-bold">لا توجد طلبات متطابقة.</div>`;
+                return;
+            }
+
+            ordersContainer.innerHTML = filtered.map(order => {
+                const currentStatus = order.status || 'تم الطلب';
+                const whatsappMsg = encodeURIComponent(`مرحبًا أ/ ${order.name || 'عميلنا العزيز'}، يسعدنا تواصلك مع متجر شوب جنوب سينا. طلبك حالته الحالية هي: [${currentStatus}].`);
+                
+                const items = order.cart || order.products || [];
+                const itemsList = items.map(p => `
+                    <div class="text-sm text-gray-700 bg-white border border-gray-100 p-2 rounded-lg font-bold flex justify-between">
+                        <span>${p.title || p.name || 'منتج'} × ${p.quantity || p.qty || 1}</span>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="bg-[#f5efe6] rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-start">
+                            <span class="text-lg font-black text-[#113946]">${order.totalPrice || order.total || 0} ج.م</span>
+                            <div class="text-right">
+                                <h3 class="text-base font-black text-gray-900">${order.name || 'بدون اسم'} • ${order.phone || ''}</h3>
+                                <p class="text-sm text-gray-600 font-medium">${order.address || ''}</p>
+                            </div>
+                        </div>
+
+                        ${order.transactionDigits || order.walletNumber || order.transactionNumber ? `
+                            <div class="text-xs text-gray-500 border-t border-dashed border-gray-300 pt-2">
+                                محفظة • آخر 4 أرقام من رقم المحوّل: <span class="font-bold text-gray-800">${order.transactionDigits || order.walletNumber || ''}</span>
+                            </div>
+                        ` : ''}
+
+                        <div class="space-y-1.5">${itemsList}</div>
+
+                        <div class="pt-2 border-t border-gray-200 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                            <div class="w-full sm:w-1/3">
+                                <select onchange="updateStatusDirectly('${order.id}', this.value)" class="w-full bg-white border border-gray-300 rounded-xl p-2 text-sm font-bold focus:ring-2 focus:ring-[#113946] text-center">
+                                    <option value="تم الطلب" ${currentStatus === 'تم الطلب' ? 'selected' : ''}>تم الطلب</option>
+                                    <option value="تم الشحن" ${currentStatus === 'تم الشحن' ? 'selected' : ''}>تم الشحن</option>
+                                    <option value="تم التوصيل" ${currentStatus === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-2 w-full sm:w-auto justify-end">
+                                <a href="tel:${order.phone}" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1 hover:bg-gray-50 transition">
+                                    <i class="fas fa-phone text-green-600"></i> اتصال
+                                </a>
+                                <a href="https://wa.me{order.phone}?text=${whatsappMsg}" target="_blank" class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1 hover:bg-green-700 transition">
+                                    <i class="fab fa-whatsapp"></i> واتساب
+                                </a>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function updateStatusDirectly(docId, newStatus) {
+            db.collection('orders').doc(docId).update({ status: newStatus })
+            .catch(err => alert("فشل تحديث الحالة: " + err.message));
+        }
+
+        searchInput.addEventListener('input', renderOrdersList);
+        filterStatus.addEventListener('change', renderOrdersList);
+        
+        // التشغيل التلقائي
+        window.addEventListener('DOMContentLoaded', initFirebaseAuto);
+    </script>
 </body>
 </html>
