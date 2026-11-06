@@ -11,6 +11,7 @@
     <!-- Firebase SDKs -->
     <script src="https://gstatic.com"></script>
     <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
 </head>
 <body class="bg-[#ece6dc] text-gray-800 font-sans min-h-screen flex flex-col p-4">
 
@@ -63,18 +64,13 @@
         const filterStatus = document.getElementById('filterStatus');
         let allOrders = [];
 
-        // خوارزمية ذكية لقراءة الـ Config مباشرة وتخطي حماية المتصفح بدون أي تعديل يدوي منك
         async function autoInitFirebase() {
             try {
-                // جلب الصفحة الرئيسية لقراءة الأكواد الداخلية
                 const response = await fetch('index.html?v=' + new Date().getTime());
                 const htmlText = await response.text();
-                
-                // البحث عن كائن إعدادات Firebase داخل الكود باستخدام تعبير نمطي متطور
                 const match = htmlText.match(/firebaseConfig\s*=\s*{([\s\S]*?)}/);
                 
-                if (match) {
-                    // تحويل النص المستخرج إلى كائن جافاسكريبت حقيقي أوتوماتيكياً
+                if (match && match[1]) {
                     const configObj = {};
                     const lines = match[1].split('\n');
                     lines.forEach(line => {
@@ -86,28 +82,27 @@
                         }
                     });
 
-                    // تفعيل الفايربيز بالبيانات المستخرجة فوراً
                     if (!firebase.apps.length) {
                         firebase.initializeApp(configObj);
                     }
                     db = firebase.firestore();
                     startListeningToOrders();
                 } else {
-                    // حل بديل في حال كان التكوين مكتوب بطريقة مغايرة
-                    document.getElementById('loadingMessage').innerHTML = `<span class="text-red-500">برجاء وضع الكود وتجربته أونلاين على رابط الموقع وليس كملف محلي.</span>`;
+                    document.getElementById('loadingMessage').innerHTML = '<span class="text-red-500">برجاء رفع الملف وتجربته أونلاين على جيت هاب ليعمل الربط الذكي.</span>';
                 }
             } catch (error) {
-                document.getElementById('loadingMessage').innerHTML = `<span class="text-red-500">فشل التوصيل التلقائي. تأكد من رفع الملف على جيت هاب.</span>`;
+                document.getElementById('loadingMessage').innerHTML = '<span class="text-red-500">فشل التوصيل التلقائي، تأكد من سلامة ملف index.html.</span>';
             }
         }
 
         function startListeningToOrders() {
-            db.collection('orders').orderBy('orderNumber', 'desc').onSnapshot(snapshot => {
+            db.collection('orders').onSnapshot(snapshot => {
                 allOrders = [];
                 snapshot.forEach(doc => { allOrders.push({ id: doc.id, ...doc.data() }); });
+                allOrders.sort((a, b) => Number(b.orderNumber || 0) - Number(a.orderNumber || 0));
                 renderDashboard();
             }, err => {
-                ordersContainer.innerHTML = `<div class="text-center text-red-600 font-bold p-6 bg-white rounded-2xl border border-red-200">حدث خطأ في صلاحيات جلب البيانات. يرجى التأكد من تفعيل الـ Rules في Firebase لجعل القراءة متاحة للوحة الإدارة.</div>`;
+                ordersContainer.innerHTML = '<div class="text-center text-red-600 font-bold p-6 bg-white rounded-2xl border border-red-200">حدث خطأ في صلاحيات جلب البيانات. يرجى التأكد من تفعيل قواعد القراءة (Rules) في لوحة Firebase.</div>';
             });
         }
 
@@ -124,41 +119,45 @@
             });
 
             if (filtered.length === 0) {
-                ordersContainer.innerHTML = `<div class="text-center text-gray-500 py-12 font-bold bg-white rounded-2xl">لا توجد طلبات متطابقة حالياً.</div>`;
+                ordersContainer.innerHTML = '<div class="text-center text-gray-500 py-12 font-bold bg-white rounded-2xl">لا توجد طلبات متطابقة حالياً.</div>';
                 return;
             }
 
-            ordersContainer.innerHTML = filtered.map(order => {
+            let htmlContent = '';
+            for (let i = 0; i < filtered.length; i++) {
+                const order = filtered[i];
                 const currentStatus = order.status || 'تم الطلب';
-                const whatsappMsg = encodeURIComponent(`مرحبًا أ/ ${order.name || 'عميلنا العزيز'}، يسعدنا تواصلك مع متجر شوب جنوب سينا. طلبك رقم (${order.orderNumber || ''}) حالته الحالية هي: [${currentStatus}].`);
+                const orderNumberDisplay = order.orderNumber || '---';
+                const clientNameDisplay = order.name || order.clientName || 'بدون اسم';
+                const clientPhoneDisplay = order.phone || order.phoneNumber || '';
+                const totalPriceDisplay = order.totalPrice || order.total || 0;
+                const whatsappMsg = encodeURIComponent('مرحبًا أ/ ' + clientNameDisplay + '، يسعدنا تواصلك مع متجر شوب جنوب سينا. طلبك رقم (' + orderNumberDisplay + ') حالته الحالية هي: [' + currentStatus + '].');
                 
                 const items = order.cart || order.products || [];
-                const itemsList = items.map(p => `
-                    <div class="text-sm text-gray-700 bg-white border border-gray-100 p-2 rounded-lg font-bold flex justify-between items-center shadow-xs">
-                        <span>${p.title || p.name || 'منتج'}</span>
-                        <span class="bg-gray-100 px-2 py-0.5 rounded text-xs">× ${p.quantity || p.qty || 1}</span>
-                    </div>
-                `).join('');
+                let itemsList = '';
+                for (let j = 0; j < items.length; j++) {
+                    const p = items[j];
+                    itemsList += '<div class="text-sm text-gray-700 bg-white border border-gray-100 p-2 rounded-lg font-bold flex justify-between items-center shadow-sm">' +
+                                 '<span>' + (p.title || p.name || 'منتج') + '</span>' +
+                                 '<span class="bg-gray-100 px-2 py-0.5 rounded text-xs">× ' + (p.quantity || p.qty || 1) + '</span>' +
+                                 '</div>';
+                }
 
-                return `
-                    <div class="bg-[#f5efe6] rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4 text-right">
-                        <div class="flex justify-between items-start">
-                            <span class="text-lg font-black text-[#113946]">${order.totalPrice || order.total || 0} ج.م</span>
-                            <div>
-                                <h3 class="text-base font-black text-gray-900">#${order.orderNumber || '---'} • ${order.name || 'بدون اسم'}</h3>
-                                <p class="text-xs text-gray-600 font-bold mt-0.5"><i class="fas fa-phone-alt pl-1"></i> ${order.phone || ''}</p>
-                                <p class="text-xs text-gray-500 font-medium mt-1"><i class="fas fa-map-marker-alt pl-1"></i> ${order.address || ''}</p>
-                            </div>
-                        </div>
+                let walletSection = '';
+                if (order.transactionDigits || order.walletNumber || order.transactionNumber) {
+                    walletSection = '<div class="text-xs bg-white p-2 rounded-xl text-gray-600 border border-gray-200">' +
+                                    '<strong>طريقة الدفع:</strong> محفظة إلكترونية (آخر 4 أرقام للمحول: <span class="font-bold text-[#113946]">' + (order.transactionDigits || order.walletNumber || order.transactionNumber || '') + '</span>)' +
+                                    '</div>';
+                }
 
-                        ${order.transactionDigits || order.walletNumber || order.transactionNumber ? `
-                            <div class="text-xs bg-white p-2 rounded-xl text-gray-600 border border-gray-200">
-                                <strong>طريقة الدفع:</strong> محفظة إلكترونية (آخر 4 أرقام للمحول: <span class="font-bold text-[#113946]">${order.transactionDigits || order.walletNumber || ''}</span>)
-                            </div>
-                        ` : ''}
-
-                        <div class="space-y-1.5">${itemsList}</div>
-
-                        <div class="pt-2 border-t border-gray-200 flex flex-col sm:flex-row gap-3 items-center justify-between">
-                            <div class="w-full sm:w-1/3">
-                                <select onchange="updateStatusDirectly('${order.id}', this.value)" class="w-full bg-white border border-gray-300 rounded-xl p-2 text-sm font-bold focus:ring-2 focus:ring-[#113946] text-center">
+                htmlContent += '<div class="bg-[#f5efe6] rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4 text-right">' +
+                               '<div class="flex justify-between items-start">' +
+                               '<span class="text-lg font-black text-[#113946]">' + totalPriceDisplay + ' ج.م</span>' +
+                               '<div>' +
+                               '<h3 class="text-base font-black text-gray-900">#' + orderNumberDisplay + ' • ' + clientNameDisplay + '</h3>' +
+                               '<p class="text-xs text-gray-600 font-bold mt-0.5"><i class="fas fa-phone-alt pl-1"></i> ' + clientPhoneDisplay + '</p>' +
+                               '<p class="text-xs text-gray-500 font-medium mt-1"><i class="fas fa-map-marker-alt pl-1"></i> ' + (order.address || '') + '</p>' +
+                               '</div>' +
+                               '</div>' +
+                               walletSection +
+                               '<div class="space-y-1.5">' + itemsList + '</div>' +
